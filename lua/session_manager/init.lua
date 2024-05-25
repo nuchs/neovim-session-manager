@@ -5,7 +5,10 @@ local session_manager = {}
 
 --- Apply user settings.
 ---@param values table
-function session_manager.setup(values) setmetatable(config, { __index = vim.tbl_extend('force', config.defaults, values) }) end
+function session_manager.setup(values)
+  setmetatable(config,
+    { __index = vim.tbl_extend('force', config.defaults, values) })
+end
 
 -- Displays action selection menu for :SessionManager
 function session_manager.available_commands()
@@ -56,8 +59,11 @@ function session_manager.load_current_dir_session(discard_current)
     local session = config.dir_to_session_filename(cwd)
     if session:exists() then
       utils.load_session(session.filename, discard_current)
+      return true
     end
   end
+
+  return false
 end
 
 --- Saves a session for the current working directory.
@@ -71,9 +77,13 @@ end
 --- Loads a session based on settings. Executed after starting the editor.
 function session_manager.autoload_session()
   if config.autoload_mode ~= AutoloadMode.Disabled and vim.fn.argc() == 0 and not vim.g.started_with_stdin then
-    if config.autoload_mode == AutoloadMode.CurrentDir then
-      session_manager.load_current_dir_session()
-    elseif config.autoload_mode == AutoloadMode.LastSession then
+    if config.autoload_mode == AutoloadMode.CurrentDir or config.autoload_mode == AutoloadMode.CurrentThenLast then
+      if session_manager.load_current_dir_session() or config.autoload_mode == AutoloadMode.Current then
+        return
+      end
+    end
+
+    if config.autoload_mode == AutoloadMode.LastSession or config.autoload_mode == AutoloadMode.CurrentThenLast then
       session_manager.load_last_session()
     end
   end
