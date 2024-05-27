@@ -53,6 +53,7 @@ function session_manager.load_last_session(discard_current)
 end
 
 --- Loads a session for the current working directory.
+---@return boolean true if a session was loaded, false otherwise
 function session_manager.load_current_dir_session(discard_current)
   local cwd = vim.uv.cwd()
   if cwd then
@@ -62,7 +63,6 @@ function session_manager.load_current_dir_session(discard_current)
       return true
     end
   end
-
   return false
 end
 
@@ -76,16 +76,18 @@ end
 
 --- Loads a session based on settings. Executed after starting the editor.
 function session_manager.autoload_session()
-  if config.autoload_mode ~= AutoloadMode.Disabled and vim.fn.argc() == 0 and not vim.g.started_with_stdin then
-    if config.autoload_mode == AutoloadMode.CurrentDir or config.autoload_mode == AutoloadMode.CurrentThenLast then
-      if session_manager.load_current_dir_session() or config.autoload_mode == AutoloadMode.CurrentDir then
-        return
-      end
-    end
+  if config.autoload_mode == AutoloadMode.Disabled or vim.fn.argc() > 0 or vim.g.started_with_stdin then
+    return
+  end
 
-    if config.autoload_mode == AutoloadMode.LastSession or config.autoload_mode == AutoloadMode.CurrentThenLast then
-      session_manager.load_last_session()
+  if config.autoload_mode == AutoloadMode.CurrentDir or config.autoload_mode == AutoloadMode.CurrentDirThenLast then
+    if session_manager.load_current_dir_session() or config.autoload_mode == AutoloadMode.CurrentDir then
+      return
     end
+  end
+
+  if config.autoload_mode == AutoloadMode.LastSession or config.autoload_mode == AutoloadMode.CurrentDirThenLast then
+    session_manager.load_last_session()
   end
 end
 
